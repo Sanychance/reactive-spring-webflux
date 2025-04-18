@@ -78,7 +78,57 @@ class FluxAndMonoGeneratorServiceTest {
                 .expectNext("S","O","H","E","I","L","M","E","H","R","D","A","D")
                 .verifyComplete();
     }
+    @Test
+    void fluxNames_transform() {
+        //when
+        var fluxNames = fluxAndMonoGeneratorService.fluxNames_transform(5);
 
+        //Then
+        StepVerifier.create(fluxNames)
+                .expectNext("S","O","H","E","I","L","M","E","H","R","D","A","D")
+                .verifyComplete();
+    }
+
+    @Test
+    void fluxNames_transform_DefaultIfEmpty() {
+        //when
+        var fluxNames = fluxAndMonoGeneratorService.fluxNames_transform_DefaultIfEmpty(8);
+
+        //Then
+        StepVerifier.create(fluxNames)
+                //.expectNext("S","O","H","E","I","L","M","E","H","R","D","A","D")
+                .expectNext("Sanaz")
+                .verifyComplete();
+    }
+
+    @Test
+    void fluxNames_transform_SwitchIfEmpty() {
+        //when
+        var fluxNames = fluxAndMonoGeneratorService.fluxNames_transform_SwitchIfEmpty(8);
+
+        //Then
+        StepVerifier.create(fluxNames)
+                .expectNext("S", "A", "N", "A", "Z")
+                //.expectNext("S","A","N","A","Z")
+                .verifyComplete();
+    }
+
+    @Test
+    void namesFlux_transform_switchIfEmpty() {
+
+        //given
+        int stringLength = 6;
+
+        //when
+        var namesFlux = fluxAndMonoGeneratorService.namesFlux_transform_switchIfEmpty(stringLength).log();
+
+        //then
+        StepVerifier.create(namesFlux)
+                .expectNext("D", "E", "F", "A", "U", "L", "T")
+                //.expectNextCount(5)
+                .verifyComplete();
+
+    }
     @Test
     void fluxNames_FlatMapAsync() {
         //when
@@ -111,7 +161,17 @@ class FluxAndMonoGeneratorServiceTest {
         StepVerifier.create(monoName)
                 .expectNext(List.of("S","A","N","A","Z"))
                 .verifyComplete();
-
-        //Then
     }
+
+    @Test
+    void monoName_Map_Filter_FlatMapMany() {
+        //when
+        var monoName = fluxAndMonoGeneratorService.monoName_Map_Filter_FlatMapMany("Sanaz",4);
+        //Then
+        StepVerifier.create(monoName)
+                .expectNext("S","A","N","A","Z")
+                .verifyComplete();
+    }
+
+
 }

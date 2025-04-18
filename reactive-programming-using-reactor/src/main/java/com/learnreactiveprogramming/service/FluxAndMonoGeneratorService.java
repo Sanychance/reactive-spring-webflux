@@ -6,6 +6,7 @@ import reactor.core.publisher.Mono;
 import java.time.Duration;
 import java.util.List;
 import java.util.Random;
+import java.util.function.Function;
 
 public class FluxAndMonoGeneratorService {
 
@@ -83,6 +84,81 @@ public class FluxAndMonoGeneratorService {
                 .log(); //it will log each and every event that happens between the subscriber and publisher
     }
 
+    // when we want to transform from one type to another which can accept Function Functional interface
+    // input and output is Publisher (Flux or Mono)
+    // we can extract the functionality and assign it to a variable so you can reuse it in different places
+    public Flux<String> fluxNames_transform(int stringLenght){
+
+        Function<Flux<String>,Flux<String>> filterMap =
+                name -> name.map(String::toUpperCase)
+                .filter(s -> s.length() > stringLenght);
+
+        return Flux.fromIterable(List.of("Sanaz","Soheil","Mehrdad"))
+                .transform(filterMap)
+                //SOHEIL, MEHRDAD -> S,O,H,E,I,L,M,E,H,R,D,A,D
+                .flatMap(name -> splitName(name))
+                .log(); //it will log each and every event that happens between the subscriber and publisher
+    }
+
+    //When no element can be return then it can return default value that is the actual type and the same type as Flux type
+    public Flux<String> fluxNames_transform_SwitchIfEmpty(int stringLenght){
+
+        Function<Flux<String>,Flux<String>> filterMap =
+                name -> name.map(String::toUpperCase)
+                        .filter(s -> s.length() > stringLenght)
+                        .flatMap(this::splitName);
+
+        Function<Flux<String>,Flux<String>> filterMapDefualt =
+                name -> name.map(String::toUpperCase)
+                        .flatMap(this::splitName);
+
+        var defaultFlux = Flux.just("Sanaz") //we get this default value if the Flux is empty
+                .transform(filterMapDefualt);
+
+        //if StringLength passed is for e.g. 8 then Flux.empty() is the return so we dont get onNext it will excecute
+        //with onComplete()
+        return Flux.fromIterable(List.of("Sanaz","Soheil","Mehrdad"))
+                .transform(filterMap)
+                .switchIfEmpty(defaultFlux)  //S,A,N,A,Z
+                /*.switchIfEmpty(Flux.just("Sanaz") //we get this default value if the Flux is empty
+                        .transform(name -> name.map(String::toUpperCase)
+                                .flatMap(this::splitName)))  */
+                .log();
+    }
+
+    public Flux<String> namesFlux_transform_switchIfEmpty(int stringLength) {
+
+        Function<Flux<String>, Flux<String>> filterMap = name -> name.map(String::toUpperCase)
+                .filter(s -> s.length() > stringLength)
+                .flatMap(this::splitName);
+
+        var defaultFlux = Flux.just("default")
+                .transform(filterMap); //"D","E","F","A","U","L","T"
+
+        var namesList = List.of("alex", "ben", "chloe"); // a, l, e , x
+        return Flux.fromIterable(namesList)
+                .transform(filterMap) // gives u the opportunity to combine multiple operations using a single call.
+                .switchIfEmpty(defaultFlux);
+        //using "map" would give the return type as Flux<Flux<String>
+
+    }
+    //When no element can be return then it can return default value that is the actual type and the same type as Flux type
+    public Flux<String> fluxNames_transform_DefaultIfEmpty(int stringLenght){
+
+        Function<Flux<String>,Flux<String>> filterMap =
+                name -> name.map(String::toUpperCase)
+                        .filter(s -> s.length() > stringLenght)
+                        .flatMap(t -> splitName(t));
+
+        //if StringLength passed is for e.g. 8 then Flux.empty() is the return so we dont get onNext it will excecute
+        //with onComplete()
+        return Flux.fromIterable(List.of("Sanaz","Soheil","Mehrdad"))
+                .transform(filterMap)
+                .defaultIfEmpty("Sanaz") //we get this default value if the Flux is empty
+                .log();
+    }
+
+
     //when we are having a use case where ordering matters then we shouldnt use flatMap as it will call async
     public Flux<String> fluxNames_FlatMapAsync(int stringLenght){
 
@@ -90,7 +166,7 @@ public class FluxAndMonoGeneratorService {
                 .map(String::toUpperCase)
                 .filter(name -> name.length() > stringLenght)
                 //SOHEIL, MEHRDAD -> S,O,H,E,I,L,M,E,H,R,D,A,D
-                .flatMap(name -> splitName_WithDelay(name))
+                .flatMap(name -> splitName_WithDelay_Flux(name))
                 .log(); //it will log each and every event that happens between the subscriber and publisher
     }
 
@@ -101,12 +177,12 @@ public class FluxAndMonoGeneratorService {
                 .map(String::toUpperCase)
                 .filter(name -> name.length() > stringLenght)
                 //SOHEIL, MEHRDAD -> S,O,H,E,I,L,M,E,H,R,D,A,D
-                .concatMap(name -> splitName_WithDelay(name))
+                .concatMap(name -> splitName_WithDelay_Flux(name))
                 .log(); //it will log each and every event that happens between the subscriber and publisher
     }
 
     //SOHEIL -> Flux(S,O,H,E,I,L)
-    public Flux<String> splitName_WithDelay(String name){
+    public Flux<String> splitName_WithDelay_Flux(String name){
         var charArray =  name.split("");
         var delay = 1000; //new Random().nextInt(1000);
         return Flux.fromArray(charArray)
@@ -136,13 +212,21 @@ public class FluxAndMonoGeneratorService {
         return Mono.just(name)
                 .map(String::toUpperCase)
                 .filter(s-> s.length()>stringLenght)
-                //SOHEIL, MEHRDAD -> S,O,H,E,I,L,M,E,H,R,D,A,D
-                .flatMap(this::splitStringToList)//Mono<List of S,A,N,Z
+                .flatMap(this::splitStringToList_Mono)//Mono<List of S,A,N,Z
                 .log();
     }
 
-    private Mono<List<String>> splitStringToList(String s) {
+    private Mono<List<String>> splitStringToList_Mono(String s) {
         var charArray = s.split("");
        return Mono.just(List.of(charArray));
+    }
+
+    //FlapMapMany uses in Mono when our Mono transformation logic returns a flux
+    public Flux<String> monoName_Map_Filter_FlatMapMany(String name, int stringLenght){
+        return Mono.just(name)
+                .map(String::toUpperCase)
+                .filter(s-> s.length()>stringLenght)
+                .flatMapMany(this::splitName_WithDelay_Flux)//Mono<List of S,A,N,Z
+                .log();
     }
 }
