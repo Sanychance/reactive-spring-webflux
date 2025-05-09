@@ -188,12 +188,66 @@ public class FluxAndMonoGeneratorService {
         return Flux.fromArray(charArray)
                 .delayElements(Duration.ofMillis(delay));
     }
-
-    //SOHEIL -> Flux(S,O,H,E,I,L)
-    public Flux<String> splitName(String name){
-       var charArray =  name.split("");
-       return Flux.fromArray(charArray);
+    /***************************** contact and contactWith ***************************/
+    //concat is the static method - only part of Flux
+    public Flux<String> flux_concat(){
+        var fluxAbc = Flux.just("A","B","C");
+        var fluxDef = Flux.just("D","E","F");
+        //factory method part of the flux
+       return Flux.concat(fluxAbc,fluxDef).log();
     }
+
+    //concatWith is the instance method - part of Flux and Mono
+    public Flux<String> flux_concatWith(){
+        var fluxAbc = Flux.just("A","B","C");
+        var fluxDef = Flux.just("D","E","F");
+        //factory method part of the flux
+        return fluxAbc.concatWith(fluxDef).log();
+    }
+
+    //concatWith is the instance method - Used here for Mono and return Flux
+    public Flux<String> mono_concatWith(){
+        var monoA = Mono.just("A");
+        var monoD = Flux.just("D");
+        //factory method part of the flux
+        return monoA.concatWith(monoD).log(); //return Flux A,D
+    }
+    /***************************** End contact and contactWith ***************************/
+
+    /***************************** merge and mergeWith ***************************/
+    //merge and mergeWith is to combine 2 publishers into 1
+    //both publishers get subscribed at the same time which means
+    //they subscribed early and merge happens in an interleaved fashion
+    // while concat subscribe to the publisher in a sequence
+    // merge is a static method part of flux, mergeWith is an instance method part of flux and mono
+    public Flux<String> flux_merge(){
+        var fluxAbc = Flux.just("A","B","C")
+                .delayElements(Duration.ofMillis(100)); //A,B
+        var fluxDef = Flux.just("D","E","F")
+                .delayElements(Duration.ofMillis(125));//D,E
+        //factory method part of the flux : A,D,B,E,C,F
+        return Flux.merge(fluxAbc,fluxDef).log();
+    }
+
+    //Instance method
+    public Flux<String> flux_mergeWith(){
+        var fluxAbc = Flux.just("A","B","C")
+                .delayElements(Duration.ofMillis(100)); //A,B
+        var fluxDef = Flux.just("D","E","F")
+                .delayElements(Duration.ofMillis(125));//D,E
+        //factory method part of the flux : A,D,B,E,C,F
+        return fluxAbc.mergeWith(fluxDef).log();
+    }
+
+    //Instance method
+    public Flux<String> mono_mergeWith(){
+        var monoA = Mono.just("A");
+        var monoB = Mono.just("D");
+        //factory method part of the flux : A,B
+        return monoA.mergeWith(monoB).log();
+    }
+
+    /*****************************End merge and mergeWith ***************************/
 
     public Mono<String> monoName(String name){
         return Mono.just(name)
@@ -229,4 +283,11 @@ public class FluxAndMonoGeneratorService {
                 .flatMapMany(this::splitName_WithDelay_Flux)//Mono<List of S,A,N,Z
                 .log();
     }
+
+    //SOHEIL -> Flux(S,O,H,E,I,L)
+    public Flux<String> splitName(String name){
+        var charArray =  name.split("");
+        return Flux.fromArray(charArray);
+    }
+
 }

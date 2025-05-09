@@ -153,6 +153,60 @@ class FluxAndMonoGeneratorServiceTest {
     }
 
     @Test
+    void flux_concat() {
+        var fluxConcat = fluxAndMonoGeneratorService.flux_concat();
+
+        StepVerifier.create(fluxConcat)
+                .expectNext("A","B","C","D","E","F")
+                .verifyComplete();
+    }
+
+    @Test
+    void flux_concatWith() {
+        var flux_concatWith = fluxAndMonoGeneratorService.flux_concatWith();
+
+        StepVerifier.create(flux_concatWith)
+                .expectNext("A","B","C","D","E","F")
+                .verifyComplete();
+    }
+
+    @Test
+    void flux_merge() {
+        var fluxConcat = fluxAndMonoGeneratorService.flux_merge();
+
+        StepVerifier.create(fluxConcat)
+                .expectNext("A","D","B","E","C","F")
+                .verifyComplete();
+    }
+
+    @Test
+    void flux_mergeWith() {
+        var flux_mergeWith = fluxAndMonoGeneratorService.flux_mergeWith();
+
+        StepVerifier.create(flux_mergeWith)
+                .expectNext("A","D","B","E","C","F")
+                .verifyComplete();
+    }
+
+    @Test
+    void mono_mergeWith() {
+        var mono_mergeWith = fluxAndMonoGeneratorService.mono_mergeWith();
+
+        StepVerifier.create(mono_mergeWith)
+                .expectNext("A","D")
+                .verifyComplete();
+    }
+
+    @Test
+    void mono_concatWith() {
+        var mono_concatWith = fluxAndMonoGeneratorService.mono_concatWith();
+
+        StepVerifier.create(mono_concatWith)
+                .expectNext("A","D")
+                .verifyComplete();
+    }
+
+    @Test
     void monoName_Map_Filter_FlatMap() {
 
         //when
